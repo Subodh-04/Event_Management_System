@@ -1,54 +1,78 @@
 import React, { useState } from "react";
 
-const dummyEvents = [
-  { id: 1, title: "Music Festival", organizer: "John Doe", status: "Pending" },
-  { id: 2, title: "Tech Meetup", organizer: "Alice Smith", status: "Pending" },
-  { id: 3, title: "Wedding Event", organizer: "Robert Brown", status: "Approved" },
-];
-
 const EventTable = () => {
-  const [events, setEvents] = useState(dummyEvents);
+  const [filterStatus, setFilterStatus] = useState("all"); // Default: Show all events
 
-  const handleApprove = (id) => {
-    setEvents(events.map(event => event.id === id ? { ...event, status: "Approved" } : event));
-  };
+  const allEvents = [
+    { id: 1, name: "Tech Conference", status: "approved" },
+    { id: 2, name: "Music Festival", status: "pending" },
+    { id: 3, name: "Health Webinar", status: "rejected" },
+    { id: 4, name: "Business Summit", status: "approved" },
+    { id: 5, name: "Sports Meetup", status: "pending" },
+  ];
 
-  const handleReject = (id) => {
-    setEvents(events.map(event => event.id === id ? { ...event, status: "Rejected" } : event));
-  };
+  // Filter events based on selected status
+  const filteredEvents = filterStatus === "all" ? allEvents : allEvents.filter(event => event.status === filterStatus);
 
   return (
-    <div className="card p-4 shadow">
-      <h5 className="mb-3">Manage Events</h5>
-      <table className="table table-hover">
+    <div className="card p-3">
+      <h5>📋 Event Management</h5>
+
+      {/* Filter Buttons */}
+      <div className="btn-group mb-3">
+        <button 
+          className={`btn ${filterStatus === "all" ? "btn-primary" : "btn-outline-primary"}`} 
+          onClick={() => setFilterStatus("all")}
+        >
+          All
+        </button>
+        <button 
+          className={`btn ${filterStatus === "pending" ? "btn-warning" : "btn-outline-warning"}`} 
+          onClick={() => setFilterStatus("pending")}
+        >
+          Pending
+        </button>
+        <button 
+          className={`btn ${filterStatus === "approved" ? "btn-success" : "btn-outline-success"}`} 
+          onClick={() => setFilterStatus("approved")}
+        >
+          Approved
+        </button>
+        <button 
+          className={`btn ${filterStatus === "rejected" ? "btn-danger" : "btn-outline-danger"}`} 
+          onClick={() => setFilterStatus("rejected")}
+        >
+          Rejected
+        </button>
+      </div>
+
+      {/* Event Table */}
+      <table className="table table-striped">
         <thead>
           <tr>
-            <th>Event</th>
-            <th>Organizer</th>
+            <th>ID</th>
+            <th>Name</th>
             <th>Status</th>
-            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {events.map(event => (
-            <tr key={event.id}>
-              <td>{event.title}</td>
-              <td>{event.organizer}</td>
-              <td>
-                <span className={`badge px-3 py-2 ${event.status === "Approved" ? "bg-success" : event.status === "Rejected" ? "bg-danger" : "bg-warning"}`}>
-                  {event.status}
-                </span>
-              </td>
-              <td>
-                {event.status === "Pending" && (
-                  <>
-                    <button className="btn btn-sm btn-outline-success me-2" onClick={() => handleApprove(event.id)}>Approve</button>
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => handleReject(event.id)}>Reject</button>
-                  </>
-                )}
-              </td>
+          {filteredEvents.length > 0 ? (
+            filteredEvents.map(event => (
+              <tr key={event.id}>
+                <td>{event.id}</td>
+                <td>{event.name}</td>
+                <td>
+                  <span className={`badge bg-${event.status === "approved" ? "success" : event.status === "pending" ? "warning" : "danger"}`}>
+                    {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                  </span>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="3" className="text-center">No events found</td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>

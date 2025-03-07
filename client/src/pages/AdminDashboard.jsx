@@ -6,6 +6,7 @@ import EventAnalytics from "../components/EventAnalytics";
 import EventCalendar from "../components/EventCalendar";
 import Sponsorships from "../components/Sponsorships";
 import Notifications from "../components/Notifications";
+import UserManagement from "../components/UserManagement";
 
 const AdminDashboard = () => {
   const [selectedSection, setSelectedSection] = useState("dashboard");
@@ -29,6 +30,7 @@ const AdminDashboard = () => {
         {selectedSection === "rejected" && <h5>Rejected Events - Coming Soon</h5>}
         {selectedSection === "analytics" && <EventAnalytics />}
         {selectedSection === "calendar" && <EventCalendar />}
+        {selectedSection === "usermanage" && <UserManagement />}
         {selectedSection === "sponsorships" && <Sponsorships />}
         {selectedSection === "notifications" && <Notifications />}
       </div>

@@ -14,11 +14,18 @@ import HomePage from "./pages/HomePage";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import Profile from "./pages/Profile";
+import PaymentPage from "./pages/PaymentPage";
+import EventForm from "./components/EventForm";
+import SuccessPage from "./pages/SuccessPage";
+import CancelPage from "./pages/CancelPage";
 
 const App = () => {
   const role = localStorage.getItem("role");
 
-  const shouldShowNavbarFooter = role !== "admin" && window.location.pathname !== "/";
+  const shouldShowNavbarFooter =
+    role !== "admin" &&
+    window.location.pathname !== "/" &&
+    window.location.pathname !== "/payment";
 
   return (
     <Router>
@@ -35,6 +42,10 @@ const App = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/about" element={<About />} />
         <Route path="/events" element={<Event />} />
+        <Route path="/event-form" element={<EventForm />} />
+        <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/success" element={<SuccessPage />} />
+        <Route path="/cancel" element={<CancelPage />} />
 
         {/* Admin Protected Route */}
         <Route element={<ProtectedRoutes allowedRoles={["admin"]} />}>

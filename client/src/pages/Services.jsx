@@ -10,8 +10,10 @@ import {
   FaMicrophoneAlt,
 } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
+import { useNavigate } from "react-router-dom";
 
 const Services = () => {
+  const navigate = useNavigate();
   const pricingPlans = [
     {
       title: "STANDARD",
@@ -50,6 +52,11 @@ const Services = () => {
       featured: false,
     },
   ];
+  // Function to redirect to EventForm with plan details
+  const handleOrderNow = (plan) => {
+    navigate(`/event-form`, { state: { selectedPlan: plan } });
+  };
+  
   return (
     <div>
       {/* Hero Section */}
@@ -150,9 +157,8 @@ const Services = () => {
 
       <section className="pricing-section py-5 pt-5">
         <div className="container pt-5">
-          {/* Title */}
           <h2 className="text-danger poppins-medium">
-            Dvents <span className=" gray">Pricing Plans</span>
+            Dvents <span className="gray">Pricing Plans</span>
           </h2>
           <p className="text-muted roboto-font pb-5">
             We make your events smart & impactful by personalized event
@@ -164,11 +170,10 @@ const Services = () => {
             {pricingPlans.map((plan, index) => (
               <div key={index} className="col-md-4 mb-5 ">
                 <div className="pricing-card">
-                  {/* Price Badge */}
                   <div
                     className={`price-badge ${plan.featured ? "premium" : ""}`}
                   >
-                    <small className="pt-serif-regular-italic ">
+                    <small className="pt-serif-regular-italic">
                       Starts from
                     </small>
                     <span>
@@ -176,16 +181,14 @@ const Services = () => {
                     </span>
                   </div>
 
-                  {/* Plan Title & Description */}
-                  <h5 className=" poppins-medium gray mt-5">{plan.title}</h5>
+                  <h5 className="poppins-medium gray mt-5">{plan.title}</h5>
                   <p className="gray fs-6 pt-serif-regular-italic pb-4">
                     {plan.description}
                   </p>
 
-                  {/* Features List */}
                   <ul className="list-unstyled mt-3 mb-5">
                     {plan.details.map((detail, idx) => (
-                      <li key={idx} className=" roboto-font gray m-3 fs-7">
+                      <li key={idx} className="roboto-font gray m-3 fs-7">
                         {detail}
                       </li>
                     ))}
@@ -198,11 +201,11 @@ const Services = () => {
                         ? "btn-danger text-white"
                         : "btn-outline-dark"
                     }`}
+                    onClick={() => handleOrderNow(plan)} // Added here
                   >
                     Order Now
                   </button>
 
-                  {/* Premium Plan Heart Icon */}
                   {plan.featured && <div className="heart-icon">❤️</div>}
                 </div>
               </div>

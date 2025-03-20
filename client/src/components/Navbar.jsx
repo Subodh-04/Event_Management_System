@@ -19,7 +19,7 @@ const Navbar = () => {
     localStorage.removeItem("role");
     localStorage.removeItem("token");
     setUser(null); // Reset user state
-    navigate("/signin");
+    navigate("/");
     window.location.reload(); // Refresh to update UI
   };
 

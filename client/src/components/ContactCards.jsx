@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom"; // Import Link from react-router-dom
 
 const ContactCards = () => {
   return (
@@ -16,7 +17,8 @@ const ContactCards = () => {
           >
             <h3 className="poppins-bold mb-3">Get in Touch With Us!</h3>
             <p>Ask questions, schedule a meeting, or request a proposal. Let’s Get Started.</p>
-            <button className="btn btn-light mt-3">Contact Us</button>
+            {/* Replace button with Link */}
+            <Link to="/contact" className="btn btn-light mt-3">Contact Us</Link>
           </div>
         </div>
 
@@ -32,7 +34,8 @@ const ContactCards = () => {
           >
             <h3 className="poppins-bold mb-3">Do You Want to Work With Us?</h3>
             <p>If you are talented enough, you can join our team and have a bright future.</p>
-            <button className="btn btn-light mt-3">Join Us</button>
+            {/* Replace button with Link */}
+            <Link to="/contact" className="btn btn-light mt-3">Join Us</Link>
           </div>
         </div>
       </div>

@@ -9,6 +9,6 @@ router.post("/create", protect, authorize("user"), eventController.createEventRe
 
 // Admin Routes
 router.post("/", protect, authorize("admin"), eventController.createEvent); // Admin creates event directly
-router.put("/:eventId", protect, authorize("admin"), eventController.updateEventStatus); // Admin updates event status
+router.put("/update/:eventId", protect, authorize("admin"), eventController.updateEventStatus); // Admin updates event status
 
 module.exports = router;

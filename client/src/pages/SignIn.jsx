@@ -17,7 +17,7 @@ const SignIn = () => {
       });
       console.log(response.data);
       
-      const { token, role } = response.data;
+      const { token, role  } = response.data;
       localStorage.setItem("token", token);
       localStorage.setItem("role", role);
       localStorage.setItem("user", JSON.stringify(response.data));

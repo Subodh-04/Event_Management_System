@@ -1,80 +1,162 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 const EventTable = () => {
-  const [filterStatus, setFilterStatus] = useState("all"); // Default: Show all events
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const allEvents = [
-    { id: 1, name: "Tech Conference", status: "approved" },
-    { id: 2, name: "Music Festival", status: "pending" },
-    { id: 3, name: "Health Webinar", status: "rejected" },
-    { id: 4, name: "Business Summit", status: "approved" },
-    { id: 5, name: "Sports Meetup", status: "pending" },
-  ];
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/events/");
+        setEvents(res.data);
+      } catch (err) {
+        console.error("Error fetching events:", err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
 
-  // Filter events based on selected status
-  const filteredEvents = filterStatus === "all" ? allEvents : allEvents.filter(event => event.status === filterStatus);
+  const handleStatusChange = async (eventId, status) => {
+    const token = localStorage.getItem("token"); // assuming token is stored as 'token'
+    const role = localStorage.getItem("role"); // assuming role is stored as 'role'
+
+    if (role !== "admin") {
+      return alert("Only admins can update event status.");
+    }
+
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/events/update/${eventId}`,
+        { status },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setEvents((prevEvents) =>
+        prevEvents.map((ev) =>
+          ev._id === eventId ? { ...ev, status: res.data.event.status } : ev
+        )
+      );
+    } catch (err) {
+      console.error("Error updating status:", err.message);
+    }
+  };
+
+  const filteredEvents =
+    filterStatus === "all"
+      ? events
+      : events.filter(
+          (event) => event.status.toLowerCase() === filterStatus.toLowerCase()
+        );
 
   return (
     <div className="card p-3">
       <h5>📋 Event Management</h5>
 
-      {/* Filter Buttons */}
       <div className="btn-group mb-3">
-        <button 
-          className={`btn ${filterStatus === "all" ? "btn-primary" : "btn-outline-primary"}`} 
-          onClick={() => setFilterStatus("all")}
-        >
-          All
-        </button>
-        <button 
-          className={`btn ${filterStatus === "pending" ? "btn-warning" : "btn-outline-warning"}`} 
-          onClick={() => setFilterStatus("pending")}
-        >
-          Pending
-        </button>
-        <button 
-          className={`btn ${filterStatus === "approved" ? "btn-success" : "btn-outline-success"}`} 
-          onClick={() => setFilterStatus("approved")}
-        >
-          Approved
-        </button>
-        <button 
-          className={`btn ${filterStatus === "rejected" ? "btn-danger" : "btn-outline-danger"}`} 
-          onClick={() => setFilterStatus("rejected")}
-        >
-          Rejected
-        </button>
+        {["all", "Pending", "Approved", "Rejected"].map((status) => (
+          <button
+            key={status}
+            className={`btn ${
+              filterStatus.toLowerCase() === status.toLowerCase()
+                ? status === "all"
+                  ? "btn-primary"
+                  : `btn-${
+                      status === "Approved"
+                        ? "success"
+                        : status === "Pending"
+                        ? "warning"
+                        : "danger"
+                    }`
+                : `btn-outline-${
+                    status === "all"
+                      ? "primary"
+                      : status === "Approved"
+                      ? "success"
+                      : status === "Pending"
+                      ? "warning"
+                      : "danger"
+                  }`
+            }`}
+            onClick={() => setFilterStatus(status)}
+          >
+            {status.toUpperCase()}
+          </button>
+        ))}
       </div>
 
-      {/* Event Table */}
-      <table className="table table-striped">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredEvents.length > 0 ? (
-            filteredEvents.map(event => (
-              <tr key={event.id}>
-                <td>{event.id}</td>
-                <td>{event.name}</td>
-                <td>
-                  <span className={`badge bg-${event.status === "approved" ? "success" : event.status === "pending" ? "warning" : "danger"}`}>
-                    {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                  </span>
+      {loading ? (
+        <p>Loading events...</p>
+      ) : (
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>TITLE</th>
+              <th>USER</th>
+              <th>STATUS</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredEvents.length > 0 ? (
+              filteredEvents.map((event) => (
+                <tr key={event._id}>
+                  <td>{event.title}</td>
+                  <td>{event.userId?.name || "N/A"}</td>
+                  <td>
+                    <span
+                      className={`badge bg-${
+                        event.status.toLowerCase() === "approved"
+                          ? "success"
+                          : event.status.toLowerCase() === "pending"
+                          ? "warning"
+                          : "danger"
+                      }`}
+                    >
+                      {event.status.toUpperCase()}
+                    </span>
+                  </td>
+                  <td>
+                    {event.status.toLowerCase() === "pending" && (
+                      <>
+                        <button
+                          className="btn btn-success btn-sm me-2"
+                          onClick={() =>
+                            handleStatusChange(event._id, "Approved")
+                          }
+                        >
+                          APPROVE
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() =>
+                            handleStatusChange(event._id, "Rejected")
+                          }
+                        >
+                          REJECT
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="text-center">
+                  NO EVENTS FOUND
                 </td>
               </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="3" className="text-center">No events found</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 };

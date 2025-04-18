@@ -35,73 +35,26 @@ const updateprof = async (req, res, next) => {
   }
 };
 
-const addAddress = async (req, res) => {
+const findUserById = async (req, res) => {
   try {
-    const { name, street, country, state, zip, isdefault, city } = req.body;
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).send({ message: "User not Found" });
-    }
-    user.address.push({ name, street, country, state, zip, isdefault, city });
-    await user.save();
-    return res
-      .status(200)
-      .json({ message: "Adress Added Successfully", user: user });
-  } catch (error) {
-    console.log("Error while adding address:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-};
+    // Extracting userId from the URL parameters
+    const { userId } = req.params;
 
-const deleteAddress = async (req, res) => {
-  try {
-    const { addressId } = req.params;
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).send({ message: "User Not FOund." });
+      return res
+        .status(404)
+        .json({ message: "UserId doesn't exist. Kindly check it!" });
+    } else {
+      return res.status(200).json({ message: "User found:", user });
     }
-    user.address.remove(addressId);
-    await user.save();
-    return res
-      .status(200)
-      .json({ message: "Address Deleted Successfully.", user: user });
   } catch (error) {
-    console.log("error while removing addresss:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
-  }
-};
-
-const editAddress = async (req, res) => {
-  try {
-    const { addressId } = req.params;
-    const { name, street, country, state, zip, city, isdefault } = req.body;
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).send({ message: "User Not Found." });
-    }
-    const address = user.address.id(addressId);
-    if (!address) {
-      return res.status(404).send({ message: "Address Doesnt Exists." });
-    }
-    if (name) address.name = name;
-    if (street) address.street = street;
-    if (city) address.city = city;
-    if (state) address.state = state;
-    if (zip) address.zip = zip;
-    if (country) address.country = country;
-    if (typeof isdefault !== "undefined") address.isdefault = isdefault;
-
-    await user.save();
-    return res.status(200).json({ message: "Address updated successfully", address });
-  } catch (error) {
-    console.log("Error while updating password:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    console.log(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 module.exports = {
   updateprof,
-  addAddress,
-  editAddress,
-  deleteAddress,
+  findUserById,
 };

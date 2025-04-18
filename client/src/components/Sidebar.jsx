@@ -21,9 +21,6 @@ const Sidebar = ({ setSelectedSection }) => {
           <button className="nav-link text-white btn btn-link" onClick={() => setSelectedSection("usermanage")}>User Management</button>
         </li>
         <li className="nav-item">
-          <button className="nav-link text-white btn btn-link" onClick={() => setSelectedSection("sponsorships")}>Sponsorships</button>
-        </li>
-        <li className="nav-item">
           <button className="nav-link text-white btn btn-link" onClick={() => setSelectedSection("notifications")}>Notifications</button>
         </li>
       </ul>

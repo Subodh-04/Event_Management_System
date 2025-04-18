@@ -15,8 +15,9 @@ const eventSchema = new mongoose.Schema(
         "Concert",
         "Workshop",
         "Festival",
-        "Other",
+        "Custom",
       ],
+      required: true,
     },
     maxAttendees: { type: Number, required: true },
     status: {
@@ -29,6 +30,35 @@ const eventSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    isCustom: {
+      type: Boolean,
+      default: false,
+    },
+    //Custom
+    customRequirements: { type: String },
+    //Custom
+    budget: { type: Number },
+    //Custom
+    services: {
+      type: [
+        {
+          category: { type: String, required: true }, // E.g., "Decorations"
+          serviceName: { type: String, required: true }, // E.g., "Premium Theme"
+          price: { type: Number, required: true }, // E.g., 15000
+        },
+      ],
+    },
+    totalPrice: {
+      type: Number,
+      default: 0,
+      required: true,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["Pending", "Completed"],
+      default: "Pending",
+    },
+    eventImage: { type: String },
   },
   { timestamps: true }
 );

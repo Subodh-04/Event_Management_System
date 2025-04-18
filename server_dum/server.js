@@ -5,6 +5,7 @@ const connectDb = require("./utils/db");
 const app = express();
 app.use(express.json());
 const cors = require("cors");
+const uRoutes = require("./routes/user_routes");
 const userRoutes = require("./routes/auth_router");
 const adminRoutes = require("./routes/admin_routes");
 const eventRoutes = require("./routes/event_routes");
@@ -16,6 +17,7 @@ console.log("Stripe Secret Key:", process.env.STRIPE_SECRET_KEY);
 app.use(express.json());
 app.use(cors());
 
+app.use("/api/user", uRoutes);
 app.use("/api/auth", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/events", eventRoutes);

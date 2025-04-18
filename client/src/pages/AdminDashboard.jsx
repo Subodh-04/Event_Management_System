@@ -31,7 +31,6 @@ const AdminDashboard = () => {
         {selectedSection === "analytics" && <EventAnalytics />}
         {selectedSection === "calendar" && <EventCalendar />}
         {selectedSection === "usermanage" && <UserManagement />}
-        {selectedSection === "sponsorships" && <Sponsorships />}
         {selectedSection === "notifications" && <Notifications />}
       </div>
     </div>

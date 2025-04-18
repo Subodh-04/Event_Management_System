@@ -52,11 +52,21 @@ const Services = () => {
       featured: false,
     },
   ];
-  // Function to redirect to EventForm with plan details
   const handleOrderNow = (plan) => {
-    navigate(`/event-form`, { state: { selectedPlan: plan } });
+    const selectedPlan =
+      plan === "Custom"
+        ? {
+            title: "Custom",
+            price: "65,000",
+            description: "Tailored to your needs",
+            details: [],
+          }
+        : plan;
+    navigate(`/event-form`, { state: { selectedPlan } });
+    console.log(selectedPlan);
+    
   };
-  
+
   return (
     <div>
       {/* Hero Section */}
@@ -304,9 +314,12 @@ const Services = () => {
             <p className="text-muted">
               Get in touch with us to make your dream event a reality.
             </p>
-            <a href="/contact" className="btn btn-danger px-4 py-2">
+            <button
+              className="btn btn-danger px-4 py-2"
+              onClick={() => handleOrderNow("Custom")}
+            >
               Let's Plan Together
-            </a>
+            </button>
           </div>
         </div>
       </section>

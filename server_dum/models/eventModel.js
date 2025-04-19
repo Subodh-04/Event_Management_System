@@ -48,6 +48,17 @@ const eventSchema = new mongoose.Schema(
         },
       ],
     },
+    feedback: {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      description: { type: String },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
     totalPrice: {
       type: Number,
       default: 0,
@@ -58,7 +69,7 @@ const eventSchema = new mongoose.Schema(
       enum: ["Pending", "Completed"],
       default: "Pending",
     },
-    eventImage: { type: String },
+    eventImage: [{ type: String }],
   },
   { timestamps: true }
 );

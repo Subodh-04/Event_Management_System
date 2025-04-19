@@ -1,54 +1,89 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const Profile = () => {
   const [user, setUser] = useState(null);
-  const [visits, setVisits] = useState(0);
-  const [editMode, setEditMode] = useState(false);
   const [updatedUser, setUpdatedUser] = useState({});
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loaderStatus, setLoaderStatus] = useState(true);
   const [events, setEvents] = useState([]);
-  const [newEvent, setNewEvent] = useState({ name: "", date: "" });
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    localStorage.removeItem("token");
+    setUser(null); // Reset user state
+    navigate("/");
+    window.location.reload(); // Refresh to update UI
+  };
+  const fetchUserDetails = async (userId) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/user/find/${userId}`
+      );
+      setUser(res.data.user);
+      setUpdatedUser(res.data);
+      if (res.data.role === "organizer") {
+        setEvents(res.data.events || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user:", err);
+    }
+  };
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const visitCount = localStorage.getItem("visits") || 1;
-
-    if (userData) {
-      setUser(userData);
-      setUpdatedUser(userData);
-      setVisits(visitCount);
-      if (userData.role === "organizer") {
-        setEvents(userData.events || []);
-      }
+    const localUser = JSON.parse(localStorage.getItem("user"));
+    if (localUser && localUser.userId) {
+      fetchUserDetails(localUser.userId);
     }
+    setLoaderStatus(false);
   }, []);
 
   const handleUpdateProfile = async () => {
     try {
-      const response = await axios.put(`/api/users/update/${user._id}`, updatedUser);
-      localStorage.setItem("user", JSON.stringify(response.data));
-      setUser(response.data);
-      setEditMode(false);
+      const token = localStorage.getItem("token");
+      const res = await axios.put(
+        `http://localhost:5000/api/user/update-profile`,
+        updatedUser,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setUser(res.data.user);
       alert("Profile updated successfully!");
-    } catch (error) {
+    } catch (err) {
+      console.error(err);
       alert("Error updating profile!");
     }
   };
 
   const handleChangePassword = async () => {
-    if (newPassword !== confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-
     try {
-      await axios.put(`/api/users/change-password/${user._id}`, { password: newPassword });
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `http://localhost:5000/api/user/change-password`,
+        {
+          currentPassword: currentPassword,
+          newPassword: newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       alert("Password changed successfully!");
       setNewPassword("");
-      setConfirmPassword("");
-    } catch (error) {
+      setCurrentPassword("");
+      alert("Logging out.....");
+      handleLogout();
+    } catch (err) {
+      console.error(err);
       alert("Error changing password!");
     }
   };
@@ -59,166 +94,200 @@ const Profile = () => {
         await axios.delete(`/api/users/delete/${user._id}`);
         localStorage.clear();
         alert("Account deleted successfully!");
-        window.location.href = "/signup";
-      } catch (error) {
+        navigate("/signup");
+      } catch (err) {
+        console.error(err);
         alert("Error deleting account!");
       }
     }
   };
 
-  const handleAddEvent = () => {
-    if (newEvent.name && newEvent.date) {
-      const updatedEvents = [...events, newEvent];
-      setEvents(updatedEvents);
-      setNewEvent({ name: "", date: "" });
-      alert("Event added successfully!");
-    }
-  };
-
-  const handleDeleteEvent = (index) => {
-    const updatedEvents = events.filter((_, i) => i !== index);
-    setEvents(updatedEvents);
-    alert("Event deleted!");
-  };
 
   return (
-    <section className="vw-100">
-      <div className="container mt-5">
-        <div className="row justify-content-center">
-          <div className="col-md-8">
-            <div className="card shadow-lg border-0 p-4 rounded-4">
-              {user ? (
-                <>
-                  <div className="text-center">
-                    <img
-                      src={user.profilePic || "/default-user.png"}
-                      alt="Profile"
-                      className="rounded-circle mb-3 border"
-                      style={{
-                        width: "120px",
-                        height: "120px",
-                        objectFit: "cover",
-                      }}
-                    />
-                    <h3 className="fw-bold">{user.userName}</h3>
-                    <p className="text-muted">{user.email}</p>
-                    <span className="badge bg-primary px-3 py-2">
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </span>
-                  </div>
-
-                  <hr className="my-4" />
-
-                  <div className="row text-center">
-                    <div className="col-md-4">
-                      <h5 className="fw-bold">{visits}</h5>
-                      <p className="text-muted small">Website Visits</p>
-                    </div>
-                    <div className="col-md-4">
-                      <h5 className="fw-bold">{user.joinedAt || "N/A"}</h5>
-                      <p className="text-muted small">Joined On</p>
-                    </div>
-                    <div className="col-md-4">
-                      <h5 className="fw-bold">{events.length}</h5>
-                      <p className="text-muted small">Events Organized</p>
-                    </div>
-                  </div>
-
-                  <hr className="my-4" />
-
-                  {/* Edit Profile */}
-                  <h5>Edit Profile</h5>
-                  <div className="mb-3">
-                    <label className="form-label">Username</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={updatedUser.userName}
-                      onChange={(e) => setUpdatedUser({ ...updatedUser, userName: e.target.value })}
-                    />
-                  </div>
-                  <button className="btn btn-success w-100" onClick={handleUpdateProfile}>
-                    Update Profile
-                  </button>
-
-                  <hr />
-
-                  {/* Change Password */}
-                  <h5>Change Password</h5>
-                  <input
-                    type="password"
-                    className="form-control mb-2"
-                    placeholder="New Password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                  />
-                  <input
-                    type="password"
-                    className="form-control mb-2"
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
-                  <button className="btn btn-warning w-100" onClick={handleChangePassword}>
-                    Change Password
-                  </button>
-
-                  <hr />
-
-                  {/* Delete Account */}
-                  <button className="btn btn-danger w-100" onClick={handleDeleteAccount}>
-                    Delete Account
-                  </button>
-
-                  {user.role === "organizer" && (
+    <div>
+      <section className="bg-light vw-100 pt-5 mt-5">
+        <div className="container">
+          <div className="row">
+            {/* Sidebar */}
+            <div className="col-lg-3 col-md-4 col-12 mb-4">
+              <div className="card shadow-sm rounded-4 p-3">
+                <h5 className="card-title text-center mb-4">
+                  Account Settings
+                </h5>
+                <ul className="nav flex-column">
+                  {user && (
                     <>
-                      <hr />
-                      <h5>Manage Events</h5>
-                      <ul className="list-group mt-3">
-                        {events.length > 0 ? (
-                          events.map((event, index) => (
-                            <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
-                              {event.name} - {event.date}
-                              <button className="btn btn-sm btn-danger" onClick={() => handleDeleteEvent(index)}>
-                                Delete
-                              </button>
-                            </li>
-                          ))
-                        ) : (
-                          <li className="list-group-item text-center text-muted">No events organized yet.</li>
-                        )}
-                      </ul>
-
-                      {/* Add Event */}
-                      <div className="mt-3">
-                        <input
-                          type="text"
-                          className="form-control mb-2"
-                          placeholder="Event Name"
-                          value={newEvent.name}
-                          onChange={(e) => setNewEvent({ ...newEvent, name: e.target.value })}
-                        />
-                        <input
-                          type="date"
-                          className="form-control mb-2"
-                          value={newEvent.date}
-                          onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                        />
-                        <button className="btn btn-primary w-100" onClick={handleAddEvent}>
-                          Add Event
-                        </button>
-                      </div>
+                      <li
+                        className="nav-item mb-2 d-flex"
+                        style={{ gap: "8px" }}
+                      >
+                        <strong style={{ minWidth: "80px" }}>Username:</strong>
+                        <span style={{ wordBreak: "break-word", flex: 1 }}>
+                          {user.userName}
+                        </span>
+                      </li>
+                      <li
+                        className="nav-item mb-2 d-flex"
+                        style={{ gap: "8px" }}
+                      >
+                        <strong style={{ minWidth: "80px" }}>Email:</strong>
+                        <span
+                          className=""
+                          style={{ wordBreak: "break-word", flex: 1 }}
+                        >
+                          {user.email}
+                        </span>
+                      </li>
+                      <li
+                        className="nav-item mb-2 d-flex"
+                        style={{ gap: "8px" }}
+                      >
+                        <strong style={{ minWidth: "80px" }}>Phone:</strong>
+                        <span style={{ wordBreak: "break-word", flex: 1 }}>
+                          {user.phone}
+                        </span>
+                      </li>
                     </>
                   )}
-                </>
+                  <li className="nav-item mb-3">
+                    <button
+                      className="btn btn-danger w-100"
+                      onClick={handleLogout}
+                    >
+                      Log out
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Main content */}
+            <div className="col-lg-9 col-md-8 col-12">
+              {loaderStatus ? (
+                <div className="d-flex justify-content-center align-items-center">
+                  {/* Optionally, replace this loader with another component or text */}
+                  <p>Loading...</p>
+                </div>
               ) : (
-                <p className="text-center">Loading user details...</p>
+                <div className="row">
+                  {/* Profile Details Card */}
+                  <div className="col-12 mb-4">
+                    <div className="card shadow-sm rounded-4">
+                      <div className="card-body">
+                        <h5 className="card-title mb-4">Account Details</h5>
+                        <form>
+                          <div className="mb-3">
+                            <label className="form-label">Username</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={updatedUser.userName}
+                              onChange={(e) =>
+                                setUpdatedUser({
+                                  ...updatedUser,
+                                  userName: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label className="form-label">Email</label>
+                            <input
+                              type="email"
+                              className="form-control"
+                              value={updatedUser.email}
+                              onChange={(e) =>
+                                setUpdatedUser({
+                                  ...updatedUser,
+                                  email: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <div className="mb-3">
+                            <label className="form-label">Phone</label>
+                            <input
+                              type="text"
+                              className="form-control"
+                              value={updatedUser.phone}
+                              onChange={(e) =>
+                                setUpdatedUser({
+                                  ...updatedUser,
+                                  phone: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-primary w-100"
+                            onClick={handleUpdateProfile}
+                          >
+                            Save Changes
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Change Password Card */}
+                  <div className="col-12 mb-4">
+                    <div className="card shadow-sm rounded-4">
+                      <div className="card-body">
+                        <h5 className="card-title mb-4">Change Password</h5>
+                        <input
+                          type="password"
+                          className="form-control mb-3"
+                          placeholder="Current Password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                        />
+                        <input
+                          type="password"
+                          className="form-control mb-3"
+                          placeholder="New Password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-warning w-100"
+                          onClick={handleChangePassword}
+                        >
+                          Change Password
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delete Account Card */}
+                  <div className="col-12 mb-4">
+                    <div className="card shadow-sm rounded-4">
+                      <div className="card-body text-center">
+                        <h5 className="card-title text-danger mb-3">
+                          Delete Account
+                        </h5>
+                        <p className="text-muted mb-4">
+                          This action is irreversible. Once your account is
+                          deleted, all your data will be lost.
+                        </p>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger w-100"
+                          onClick={handleDeleteAccount}
+                        >
+                          Delete Account
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 };
 

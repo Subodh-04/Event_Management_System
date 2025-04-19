@@ -1,41 +1,83 @@
-import React from "react";
-
-const eventsData = [
-  {
-    id: 1,
-    title: "CountDown Event",
-    date: "September 01, 2019",
-    time: "03 AM",
-    location: "32-B, Envato St, Themeforest Ave, CA",
-    image: "/eve1.jpg",
-  },
-  {
-    id: 2,
-    title: "Marketing Concert",
-    date: "July 31, 2019",
-    time: "08 AM",
-    location: "32-B, Envato St, Themeforest Ave, CA",
-    image: "/eve2.jpg",
-  },
-  {
-    id: 3,
-    title: "SEO Conference",
-    date: "October 01, 2019",
-    time: "08 AM",
-    location: "32-B, Envato St, Themeforest Ave, CA",
-    image: "/eve3.jpg",
-  },
-  {
-    id: 4,
-    title: "APEC 2017",
-    date: "September 02, 2019",
-    time: "07 AM",
-    location: "32-B, Envato St, Themeforest Ave, CA",
-    image: "/eve4.jpg",
-  },
-];
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
 const Event = () => {
+  const [pastEvents, setPastEvents] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/events/");
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // normalize today
+
+        const past = res.data
+          .filter((event) => new Date(event.date) < today)
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const future = res.data
+          .filter((event) => new Date(event.date) >= today)
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        setPastEvents(past);
+        setUpcomingEvents(future);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const renderEventCard = (event, isPast) => (
+    <div key={event._id} className="col-md-3 mb-4">
+      <div className="event-card position-relative">
+        <img
+          src={event.eventImage[0]}
+          alt={event.title}
+          style={{
+            width: "100%",
+            height: "200px",
+            objectFit: "cover",
+            borderRadius: "10px",
+          }}
+        />
+        {/* Badge */}
+        <span
+          className={`badge position-absolute top-0 end-0 m-2 ${
+            isPast ? "bg-secondary" : "bg-success"
+          }`}
+        >
+          {isPast ? "Completed" : "Upcoming"}
+        </span>
+
+        <div className="card-body text-center pt-3">
+          <p className="text-muted m-0 roboto-font">
+            {formatDate(event.date)}
+          </p>
+          <h5 className="mt-2 poppins-medium">
+            <a href="/" className="event-link">
+              {event.title}
+            </a>
+          </h5>
+          <p className="small">
+            <i className="roboto-font"></i> {event.venue}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {/* Hero Section */}
@@ -56,30 +98,29 @@ const Event = () => {
 
       {/* Events Section */}
       <section className="container my-5">
-        <div className="row">
-          {eventsData.map((event) => (
-            <div key={event.id} className="col-md-3 mb-4">
-              <div className="event-card">
-                <img
-                  src={event.image}
-                  className="card-img-top h-50"
-                  alt={event.title}
-                />
-                <div className="card-body text-center">
-                  <p className="text-muted m-0 roboto-font">
-                    {event.date} - {event.time}
-                  </p>
-                  <h5 className="mt-2 poppins-medium pt-3">
-                    <a href="/" className="event-link">{event.title}</a>
-                  </h5>
-                  <p className="small">
-                    <i className="roboto-font"></i> {event.location}
-                  </p>
-                </div>
-              </div>
+        {pastEvents.length > 0 && (
+          <>
+            <h3 className="mb-4 text-muted">📆 Past Events</h3>
+            <div className="row">
+              {pastEvents.map((event) => renderEventCard(event, true))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
+
+        {upcomingEvents.length > 0 && (
+          <>
+            <h3 className="mt-5 mb-4 text-dark">⏳ Upcoming Events</h3>
+            <div className="row">
+              {upcomingEvents.map((event) => renderEventCard(event, false))}
+            </div>
+          </>
+        )}
+
+        {pastEvents.length === 0 && upcomingEvents.length === 0 && (
+          <div className="text-center mt-5">
+            <h5 className="text-muted">No events available.</h5>
+          </div>
+        )}
       </section>
     </>
   );

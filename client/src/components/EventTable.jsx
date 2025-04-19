@@ -99,7 +99,8 @@ const EventTable = () => {
           <thead>
             <tr>
               <th>TITLE</th>
-              <th>USER</th>
+              <th>LOCATION</th>
+              <th>DATE</th>
               <th>STATUS</th>
               <th>ACTIONS</th>
             </tr>
@@ -109,7 +110,15 @@ const EventTable = () => {
               filteredEvents.map((event) => (
                 <tr key={event._id}>
                   <td>{event.title}</td>
-                  <td>{event.userId?.name || "N/A"}</td>
+                  <td>
+                    {event.venue ? event.venue.split(",")[1].trim() : "N/A"}
+                  </td>
+                  <td>
+                    {event.date
+                      ? new Date(event.date).toLocaleDateString("en-GB")
+                      : "No date"}
+                  </td>
+
                   <td>
                     <span
                       className={`badge bg-${

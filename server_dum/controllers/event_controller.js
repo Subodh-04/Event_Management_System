@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const Event = require("../models/eventModel");
 const { sendNotification } = require("../services/notificationService");
 
@@ -75,14 +76,24 @@ const createEventRequest = async (req, res) => {
     // Generate payment link
 
     // Notify admin
-    await sendNotification("admin", `New event request: ${title}`);
+
+    await sendNotification(
+      "admin",
+      `New event request: ${newEvent.title}`,
+      "info"
+    );
 
     res.status(201).json({
       message: "Event request created successfully. Redirecting to payment...",
       event: newEvent,
     });
+    await sendNotification(
+      "admin",
+      `Payment received for event: ${newEvent.title}`,
+      "success"
+    );
   } catch (error) {
-    console.error("Error creating event request:", error.message);
+    console.error("Error creating event request:", error);
     res
       .status(500)
       .json({ message: "Failed to create event request. Please try again." });
@@ -186,10 +197,10 @@ const updateEventStatus = async (req, res) => {
       event.paymentStatus = "Completed";
       await event.save();
     }
-
     await sendNotification(
-      event.userId,
-      `Your event "${event.title}" has been ${status}.`
+      "admin",
+      `Event \"${event.title}\" has been ${status}`,
+      status === "Approved" ? "success" : "warning"
     );
 
     res.status(200).json({
@@ -204,9 +215,127 @@ const updateEventStatus = async (req, res) => {
   }
 };
 
+const addEventFeedback = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description } = req.body;
+    const userId = req.user._id;
+
+    const event = await Event.findById(id);
+
+    if (!event) return res.status(404).json({ message: "Event not found" });
+
+    // Ensure only the event creator can add feedback
+    if (event.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    // Event must be approved and completed
+    const isPast = new Date(event.date) < new Date();
+    if (event.status !== 'Approved' || !isPast) {
+      return res.status(400).json({ message: "Event must be approved and completed" });
+    }
+
+    // Feedback should not already exist
+    if (event.feedback && event.feedback.description) {
+      return res.status(400).json({ message: "Feedback already submitted" });
+    }
+
+    event.feedback = {
+      userId,
+      description,
+      createdAt: new Date(),
+    };
+
+    await event.save();
+
+    res.status(200).json({ message: "Feedback submitted successfully", event });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const searchEvent = async (req, res) => {
+  let { query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ message: "Query parameter is required" });
+  }
+
+  query = String(query); // ✅ force it to a string
+
+  const conditions = [];
+
+  // ✅ add title search with regex
+  conditions.push({ title: { $regex: query, $options: "i" } });
+
+  // ✅ if it's a valid ObjectId, also search by _id
+  if (mongoose.Types.ObjectId.isValid(query)) {
+    conditions.push({ _id: query });
+  }
+
+  try {
+    const events = await Event.find({ $or: conditions });
+
+    if (events && events.length > 0) {
+      const event = events[0]; // Assuming only one match, as per your existing logic
+      let canUploadImages = true;
+      let message = "Event found";
+
+      // Check if the event is approved
+      if (event.status !== "Approved") {
+        canUploadImages = false;
+        message = "Event is not approved. Image upload is not allowed.";
+      }
+
+      // Check if the event is completed (date before today)
+      const eventDate = new Date(event.date);
+      if (eventDate > new Date()) {
+        canUploadImages = false;
+        message = "Event is not completed yet. Image upload is not allowed.";
+      }
+
+      // Return the event details and the upload permission status
+      return res.json({
+        event,
+        message,
+        canUploadImages,
+      });
+    } else {
+      return res.status(404).json({ message: "Event not found" });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+//images uploaded by admin for events
+const imageUpload = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const imageLinks = req.files.map((file) => file.path);
+    console.log(imageLinks);
+
+    const updatedEvent = await Event.findByIdAndUpdate(
+      eventId,
+      { $push: { eventImage: { $each: imageLinks } } },
+      { new: true }
+    );
+
+    res.json({ success: true, images: updatedEvent.eventImage });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Image upload failed." });
+  }
+};
+
 module.exports = {
   getAllEvents,
   createEventRequest,
   createEvent,
   updateEventStatus,
+  searchEvent,
+  imageUpload,
 };

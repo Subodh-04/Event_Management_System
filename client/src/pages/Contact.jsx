@@ -1,7 +1,128 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FaMapMarkerAlt, FaPhone, FaEnvelope } from "react-icons/fa"; // Import icons
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// A function to get address using Nominatim API (Reverse Geocoding)
+const getAddressFromLatLng = async (lat, lng) => {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+    );
+    const data = await res.json();
+    console.log("Reverse geocoding response:", data); // Debugging: log API response
+    return data?.display_name || "Address not found";
+  } catch (error) {
+    console.error("Error fetching address:", error); // Debugging: log errors
+    return "Address not found";
+  }
+};
+
+const containerStyle = {
+  width: "100%",
+  height: "350px",
+};
 
 const Contact = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    source: "",
+    message: "",
+    location: {
+      address: "",
+      lat: "",
+      lng: "",
+    },
+  });
+
+  const [address, setAddress] = useState("");
+
+  // Handle input change
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  // Handle location change
+  const handleLocationChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      location: {
+        ...formData.location,
+        [name]: value,
+      },
+    });
+  };
+
+  // Function to handle map click
+  const handleMapClick = async (event) => {
+    const lat = event.latlng.lat;
+    const lng = event.latlng.lng;
+
+    console.log("Clicked at:", lat, lng); // Debugging: log lat-lng
+
+    // Update the state with lat-lng
+    setFormData((prevState) => ({
+      ...prevState,
+      location: {
+        ...prevState.location,
+        lat,
+        lng,
+      },
+    }));
+
+    // Fetch the address from the clicked coordinates
+    const address = await getAddressFromLatLng(lat, lng);
+    console.log("Fetched address:", address); // Debugging: log fetched address
+
+    // Update the address in formData
+    setFormData((prevState) => ({
+      ...prevState,
+      location: {
+        ...prevState.location,
+        address,
+      },
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("http://localhost:5000/api/contact/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+      console.log(result);
+
+      if (response.ok) {
+        alert("Message sent successfully!");
+      } else {
+        alert("Failed to send message. Try again!");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred. Please try again later.");
+    }
+  };
+
+  // Log formData changes to ensure location state updates
+  useEffect(() => {
+    console.log("Form Data Updated:", formData);
+  }, [formData]); // This will log the updated formData when it's changed
+
   return (
     <>
       <section>
@@ -30,10 +151,7 @@ const Contact = () => {
 
         <div className="row mt-5">
           <div className="col-md-4">
-            <div
-              className="contact-card bg-success text-white shadow p-4 custom-rounded
-"
-            >
+            <div className="contact-card bg-success text-white shadow p-4 custom-rounded">
               <div className="d-flex justify-content-end">
                 <FaMapMarkerAlt size={32} />
               </div>
@@ -43,10 +161,7 @@ const Contact = () => {
           </div>
 
           <div className="col-md-4">
-            <div
-              className="contact-card bg-primary text-white shadow p-4 custom-rounded
-"
-            >
+            <div className="contact-card bg-primary text-white shadow p-4 custom-rounded">
               <div className="d-flex justify-content-end">
                 <FaPhone size={32} />
               </div>
@@ -56,10 +171,7 @@ const Contact = () => {
           </div>
 
           <div className="col-md-4">
-            <div
-              className="contact-card bg-dark text-white shadow p-4 custom-rounded
-"
-            >
+            <div className="contact-card bg-dark text-white shadow p-4 custom-rounded">
               <div className="d-flex justify-content-end">
                 <FaEnvelope size={32} />
               </div>
@@ -77,20 +189,26 @@ const Contact = () => {
           <div className="col-md-6">
             <h4 className="gray poppins-bold mb-4">MESSAGE FORM</h4>
 
-            <form className="mt-4 roboto-font pt-3">
+            <form onSubmit={handleSubmit} className="mt-4 roboto-font pt-3">
               <div className="row pb-3">
                 <div className="col-md-6 mb-3">
                   <input
                     type="text"
+                    name="name"
                     className="form-control"
                     placeholder="Your Name"
+                    value={formData.name}
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div className="col-md-6 mb-3">
                   <input
                     type="email"
+                    name="email"
                     className="form-control"
                     placeholder="Your Email"
+                    value={formData.email}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>
@@ -99,15 +217,21 @@ const Contact = () => {
                 <div className="col-md-6 mb-3">
                   <input
                     type="text"
+                    name="phone"
                     className="form-control"
                     placeholder="Your Tel"
+                    value={formData.phone}
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div className="col-md-6 mb-3">
                   <input
                     type="text"
+                    name="source"
                     className="form-control"
                     placeholder="Where did you hear about us?"
+                    value={formData.source}
+                    onChange={handleInputChange}
                   />
                 </div>
               </div>
@@ -115,9 +239,48 @@ const Contact = () => {
               <div className="mb-3 pb-4">
                 <textarea
                   className="form-control"
+                  name="message"
                   rows="4"
                   placeholder="Your Message ..."
+                  value={formData.message}
+                  onChange={handleInputChange}
                 ></textarea>
+              </div>
+
+              {/* Location Input Fields */}
+              <h5 className="mt-3 text-start">Location Information</h5>
+              <input
+                type="text"
+                name="address"
+                className="form-control"
+                placeholder="Your Address"
+                value={formData.location.address}
+                onChange={handleLocationChange}
+                disabled
+              />
+              <div className="row pb-3 mt-3">
+                <div className="col-md-6 mb-3">
+                  <input
+                    type="text"
+                    name="lat"
+                    className="form-control"
+                    placeholder="Latitude"
+                    value={formData.location.lat}
+                    onChange={handleLocationChange}
+                    disabled
+                  />
+                </div>
+                <div className="col-md-6 mb-3">
+                  <input
+                    type="text"
+                    name="lng"
+                    className="form-control"
+                    placeholder="Longitude"
+                    value={formData.location.lng}
+                    onChange={handleLocationChange}
+                    disabled
+                  />
+                </div>
               </div>
 
               <button type="submit" className="btn btn-danger w-100 mb-5">
@@ -128,15 +291,21 @@ const Contact = () => {
 
           {/* Map Section */}
           <div className="col-md-6 mt-4 mt-md-0">
-            <iframe
-              title="Google Map"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d100000!2d73.162874!3d19.220251!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be795b5c6e5a1e9%3A0x4b7c7c0c28f748bf!2sUlhasnagar%2C%20Maharashtra%2C%20India!5e0!3m2!1sen!2sus!4v1709642356789!5m2!1sen!2sus"
-              width="100%"
-              height="350"
-              style={{ border: 0 }}
-              allowFullScreen=""
-              loading="lazy"
-            ></iframe>
+            <MapContainer
+              center={[19.220251, 73.162874]} // Default center coordinates
+              zoom={15}
+              style={containerStyle}
+              onClick={handleMapClick}
+            >
+              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+              {formData.location.lat && formData.location.lng && (
+                <Marker
+                  position={[formData.location.lat, formData.location.lng]}
+                >
+                  <Popup>{formData.location.address}</Popup>
+                </Marker>
+              )}
+            </MapContainer>
           </div>
         </div>
       </section>
